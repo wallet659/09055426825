@@ -1,0 +1,44 @@
+From dbda297fd91aab2727f7a69d3b7d3a32ad4261d2 Mon Sep 17 00:00:00 2001
+From: Richard Purdie <richard.purdie@linuxfoundation.org>
+Date: Tue, 7 Aug 2018 14:24:19 +0000
+Subject: [PATCH] bitbake: runqueue: Allow the hash validate function to have
+ an idea of build completion
+
+There is an oversight in the current hash validation API in that the
+function can't know how many setscene tasks already completed. Rather
+than trying to add additional parameters to the function, causing
+incompatibilities, store the value in the datastore.
+
+This is useful to allow build status reporting to the user for
+figures on sstate reusage and build completion.
+
+(Bitbake rev: ec037d3e49264037b81212f498d98e292ae7c334)
+
+Signed-off-by: Richard Purdie <richard.purdie@linuxfoundation.org>
+---
+ bitbake/lib/bb/runqueue.py | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/bitbake/lib/bb/runqueue.py b/bitbake/lib/bb/runqueue.py
+index a43c9983a1..400709c160 100644
+--- a/bitbake/lib/bb/runqueue.py
++++ b/bitbake/lib/bb/runqueue.py
+@@ -2314,10 +2314,15 @@ class RunQueueExecuteScenequeue(RunQueueExecute):
+                 sq_hash.append(self.rqdata.runtaskentries[tid].hash)
+                 sq_taskname.append(taskname)
+                 sq_task.append(tid)
++
++            self.cooker.data.setVar("BB_SETSCENE_STAMPCURRENT_COUNT", len(stamppresent))
++
+             call = self.rq.hashvalidate + "(sq_fn, sq_task, sq_hash, sq_hashfn, d)"
+             locs = { "sq_fn" : sq_fn, "sq_task" : sq_taskname, "sq_hash" : sq_hash, "sq_hashfn" : sq_hashfn, "d" : self.cooker.data }
+             valid = bb.utils.better_eval(call, locs)
+ 
++            self.cooker.data.delVar("BB_SETSCENE_STAMPCURRENT_COUNT")
++
+             valid_new = stamppresent
+             for v in valid:
+                 valid_new.append(sq_task[v])
+-- 
+GitLab
+
